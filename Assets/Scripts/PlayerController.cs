@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using NavKeypad;
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
@@ -27,11 +28,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Camera mainCamera;
     [SerializeField] private PlayerInputHandler playerInputHandler;
 
+    [Header("UI Interaction Settings")]
+    [SerializeField] private TextMeshProUGUI interactionText;
+    [SerializeField] private GameObject mobileInteractButton;
+
     private Vector3 currentMovement;
     private float verticalRotation;
     private float CurrentSpeed => walkSpeed * (playerInputHandler.SprintTriggered ? sprintMultiplier : 1);
     private bool wasInteractTriggered;
     private bool isUsingKeypad;
+    public bool IsUsingKeypad => isUsingKeypad;
     private Keypad activeKeypad;
     private Vector3 savedPlayerPosition;
     private Quaternion savedPlayerRotation;
@@ -40,8 +46,15 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        if (playerInputHandler != null)
+        {
+            playerInputHandler.SetCursorLock(true);
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     // Update is called once per frame
@@ -50,12 +63,14 @@ public class PlayerController : MonoBehaviour
         if (isUsingKeypad)
         {
             HandleKeypadMode();
+            UpdateInteractionUI();
             return;
         }
 
         HandleMovement();
         HandleRotation();
         HandleInteraction();
+        UpdateInteractionUI();
     }
 
     private Vector3 CalculateWorldDirection()
@@ -112,6 +127,54 @@ public class PlayerController : MonoBehaviour
         ApplyVerticalRotation(mouseYRotation);
     }
 
+    private void PerformInteraction()
+    {
+        if (mainCamera != null)
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out hit, interactionDistance, interactableLayer))
+            {
+                Debug.Log($"[PlayerController] PerformInteraction hit: '{hit.transform.name}' with tag: '{hit.transform.tag}'");
+                if (hit.transform.CompareTag("door"))
+                {
+                    Door door = hit.transform.GetComponentInParent<Door>();
+                    if (door != null)
+                    {
+                        door.ActionDoor();
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[PlayerController] Door component not found on hit target or its parents!");
+                    }
+                }
+                else if (hit.transform.CompareTag("keypad") || hit.transform.GetComponentInParent<Keypad>() != null)
+                {
+                    Keypad keypad = hit.transform.GetComponentInParent<Keypad>();
+                    if (keypad != null && !keypad.IsAccessGranted)
+                    {
+                        EnterKeypadMode(keypad);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[PlayerController] Keypad component not found or access already granted!");
+                    }
+                }
+                else
+                {
+                    hit.transform.SendMessage("Interact", SendMessageOptions.DontRequireReceiver);
+                }
+            }
+            else
+            {
+                Debug.Log("[PlayerController] PerformInteraction: Raycast hit nothing.");
+            }
+        }
+        else
+        {
+            Debug.LogError("[PlayerController] PerformInteraction: mainCamera is null!");
+        }
+    }
+
     private void HandleInteraction()
     {
         bool isInteractTriggered = playerInputHandler.InteractTriggered;
@@ -119,36 +182,67 @@ public class PlayerController : MonoBehaviour
         // Ensure we only interact once per button press (like GetKeyDown)
         if (isInteractTriggered && !wasInteractTriggered)
         {
-            if (mainCamera != null)
+            PerformInteraction();
+        }
+
+        wasInteractTriggered = isInteractTriggered;
+    }
+
+    private void UpdateInteractionUI()
+    {
+        if (interactionText == null) return;
+
+        bool lookingAtInteractable = false;
+        string promptText = "";
+
+        if (isUsingKeypad)
+        {
+            lookingAtInteractable = true; // Keep button visible during keypad entry to allow exiting
+            promptText = (playerInputHandler != null && playerInputHandler.IsTouchscreenModeActive()) ? "Exit Keypad" : "Press E to Exit Keypad";
+        }
+        else if (mainCamera != null)
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out hit, interactionDistance, interactableLayer))
             {
-                RaycastHit hit;
-                if (Physics.Raycast(mainCamera.transform.position, mainCamera.transform.forward, out hit, interactionDistance, interactableLayer))
+                if (hit.transform.CompareTag("door"))
                 {
-                    if (hit.transform.CompareTag("door"))
+                    lookingAtInteractable = true;
+                    promptText = (playerInputHandler != null && playerInputHandler.IsTouchscreenModeActive()) ? "Open / Close Door" : "Press E to Open / Close Door";
+                }
+                else if (hit.transform.CompareTag("keypad") || hit.transform.GetComponentInParent<Keypad>() != null)
+                {
+                    Keypad keypad = hit.transform.GetComponentInParent<Keypad>();
+                    if (keypad != null && !keypad.IsAccessGranted)
                     {
-                        Door door = hit.transform.GetComponentInParent<Door>();
-                        if (door != null)
-                        {
-                            door.ActionDoor();
-                        }
-                    }
-                    else if (hit.transform.CompareTag("keypad") || hit.transform.GetComponentInParent<Keypad>() != null)
-                    {
-                        Keypad keypad = hit.transform.GetComponentInParent<Keypad>();
-                        if (keypad != null && !keypad.IsAccessGranted)
-                        {
-                            EnterKeypadMode(keypad);
-                        }
-                    }
-                    else
-                    {
-                        hit.transform.SendMessage("Interact", SendMessageOptions.DontRequireReceiver);
+                        lookingAtInteractable = true;
+                        promptText = (playerInputHandler != null && playerInputHandler.IsTouchscreenModeActive()) ? "Use Keypad" : "Press E to Use Keypad";
                     }
                 }
             }
         }
 
-        wasInteractTriggered = isInteractTriggered;
+        interactionText.text = promptText;
+
+        if (mobileInteractButton != null)
+        {
+            bool shouldShowButton = playerInputHandler != null && playerInputHandler.IsTouchscreenModeActive() && lookingAtInteractable;
+            mobileInteractButton.SetActive(shouldShowButton);
+        }
+    }
+
+    // Public method for mobile UI Button OnClick trigger
+    public void TriggerInteract()
+    {
+        Debug.Log("[PlayerController] TriggerInteract button pressed!");
+        if (isUsingKeypad)
+        {
+            ExitKeypadMode();
+        }
+        else
+        {
+            PerformInteraction();
+        }
     }
 
     private void EnterKeypadMode(Keypad keypad)
@@ -167,8 +261,16 @@ public class PlayerController : MonoBehaviour
         // Teleport player in front of the keypad
         TeleportToKeypad(keypad);
 
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        if (playerInputHandler != null)
+        {
+            playerInputHandler.SetCursorLock(false);
+            playerInputHandler.SetJoystickActive(false); // Hide joystick in keypad mode
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     private void ExitKeypadMode()
@@ -189,8 +291,16 @@ public class PlayerController : MonoBehaviour
         mainCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
 
         isUsingKeypad = false;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        if (playerInputHandler != null)
+        {
+            playerInputHandler.SetCursorLock(true);
+            playerInputHandler.SetJoystickActive(true); // Restore joystick visibility
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     private void OnKeypadSuccess()

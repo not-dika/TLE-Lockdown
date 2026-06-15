@@ -12,12 +12,12 @@ public class KeypadInteractionFPV : MonoBehaviour
     {
         if (cam == null) cam = Camera.main;
 
-        var mouse = Mouse.current;
-        if (mouse == null) return;
+        var pointer = Pointer.current;
+        if (pointer == null) return;
 
-        if (mouse.leftButton.wasPressedThisFrame)
+        if (pointer.press.wasPressedThisFrame)
         {
-            var ray = cam.ScreenPointToRay(mouse.position.ReadValue());
+            var ray = cam.ScreenPointToRay(pointer.position.ReadValue());
             if (Physics.Raycast(ray, out var hit))
             {
                 if (hit.collider.TryGetComponent(out KeypadButton keypadButton))
