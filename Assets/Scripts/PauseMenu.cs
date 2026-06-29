@@ -6,6 +6,7 @@ public class PauseMenu : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private GameObject pauseMenuUI;
+    [SerializeField] private GameObject SettingsMenuUI;
     [SerializeField] private GameObject playerObject;
 
     private PlayerInputHandler playerInputHandler;
@@ -42,9 +43,10 @@ public class PauseMenu : MonoBehaviour
         }
 
         // Ensure menu is closed on start
-        if (pauseMenuUI != null)
+        if (pauseMenuUI != null && SettingsMenuUI != null)
         {
             pauseMenuUI.SetActive(false);
+            SettingsMenuUI.SetActive(false);
         }
     }
 
@@ -72,11 +74,12 @@ public class PauseMenu : MonoBehaviour
 
     public void Resume()
     {
-        if (pauseMenuUI != null)
+        if (pauseMenuUI != null && SettingsMenuUI != null)
         {
             pauseMenuUI.SetActive(false);
+            SettingsMenuUI.SetActive(false);
         }
-        
+
         Time.timeScale = 1f;
         isPaused = false;
 

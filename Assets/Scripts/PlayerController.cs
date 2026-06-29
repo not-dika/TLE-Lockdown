@@ -42,10 +42,12 @@ public class PlayerController : MonoBehaviour
     private Vector3 savedPlayerPosition;
     private Quaternion savedPlayerRotation;
     private float savedVerticalRotation;
+    private PauseMenu pauseMenu;
 
     // Start is called before the first frame update
     void Start()
     {
+        pauseMenu = FindFirstObjectByType<PauseMenu>();
         if (playerInputHandler != null)
         {
             playerInputHandler.SetCursorLock(true);
@@ -60,6 +62,11 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if ((pauseMenu != null && pauseMenu.IsPaused) || Time.timeScale == 0f)
+        {
+            return;
+        }
+
         if (isUsingKeypad)
         {
             HandleKeypadMode();
