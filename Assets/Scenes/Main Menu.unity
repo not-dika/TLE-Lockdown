@@ -1235,8 +1235,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -0.000045776}
-  m_SizeDelta: {x: 1920, y: 1080}
+  m_AnchoredPosition: {x: 0, y: 6}
+  m_SizeDelta: {x: 2400, y: 1080}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &749681415
 MonoBehaviour:
@@ -2800,7 +2800,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6e536739f68b524f874cbe72d177c6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VolumeScrollbar
-  musicManager: {fileID: 620469339}
 --- !u!1 &1434920772
 GameObject:
   m_ObjectHideFlags: 0
@@ -3562,7 +3561,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 25, y: 343}
+  m_AnchoredPosition: {x: 30, y: 255}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1870711774

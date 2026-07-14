@@ -86,8 +86,11 @@ public class Door : MonoBehaviour
     public void ActionDoor()
     {
         Debug.Log($"ActionDoor called on '{gameObject.name}', locked={locked}");
-        if (locked) return;
-
+        if (locked)
+        {
+            PopupMessage.Instance.Show("Door is locked");
+            return;
+        }
 
         foreach (var door in UseDoors)
         {
